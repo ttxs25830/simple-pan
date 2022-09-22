@@ -1,12 +1,18 @@
 import express from "express";
-import { existsSync, readdirSync, mkdirSync, readFileSync } from "fs";
+import { existsSync, readdirSync, mkdirSync, readFileSync, unlink } from "fs";
 import mv from "mv";
 import path from "path";
 import CONFIG_j from "./config.json";
 import render from "./render";
 import multer from "multer";
 import { jump } from "./html";
-let CONFIG;
+let CONFIG: {
+  port: any;
+  filePath: any;
+  tmp: any;
+  cleanTime: any;
+  external?: boolean;
+};
 if (typeof CONFIG_j["external"] == "string") {
   CONFIG = JSON.parse(
     readFileSync(CONFIG_j["external"] as string, {
@@ -29,6 +35,33 @@ const TMP_PATH = path.isAbsolute(CONFIG.tmp)
 if (!existsSync(TMP_PATH)) {
   mkdirSync(TMP_PATH);
 }
+const CLEAN_TIME = CONFIG.cleanTime * 60000;
+let lastClean = 0;
+
+setInterval(async () => {
+  if (Math.floor(Date.now() / CLEAN_TIME) > lastClean) {
+    lastClean = Math.floor(Date.now() / CLEAN_TIME);
+    await Promise.all(readdirSync(PATH)
+      .filter((v) => !v.startsWith("."))
+      .map((v) => path.join(PATH, v))
+      .map(
+        (v) =>
+          new Promise<void>((res, rej) =>
+            unlink(v, (err) => (err ? rej(err) : res()))
+          )
+      ));
+  }
+}, 1000)
+
+function readableTimeLen(time: number) {
+  time = Math.floor(time/60000)
+  let m = time % 60
+  time = Math.floor(time/60)
+  let h = time % 60
+  time = Math.floor(time/60)
+  let d = time % 24
+  return `${d.toString(10)}天${h.toString(10)}小时${m}分钟`
+}
 const app = express();
 app.use(
   multer({
@@ -42,13 +75,15 @@ app
   })
   .get("/ls", (request, response) => {
     let list = readdirSync(PATH).filter((v) => !v.startsWith("."));
-    response.status(200).send(render(list));
+    response
+      .status(200)
+      .send(render(list, readableTimeLen(CLEAN_TIME - (Date.now() % CLEAN_TIME))));
   })
   .get("/down/*", (request, response) => {
     let urll = request.url.split("/");
     let fp = "";
     if (urll.length != 3) {
-      response.status(403).send("您无权访问该目录！" + jump);
+      response.status(400).send("无法理解的访问路径！" + jump);
       return;
     } else {
       fp = path.join(PATH, decodeURIComponent(urll[2]));

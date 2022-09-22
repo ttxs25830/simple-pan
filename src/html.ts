@@ -31,6 +31,7 @@ export const template =
     <br /><br />
     <div class="func">
       <h3>下载</h3>
+      <p>距离下次定时清理文件还有：<!-- RELPACE THIS INTO CLEAN TIME --></p>
       <ul>
         <!-- RELPACE THIS INTO FILE LIST -->
       </ul>

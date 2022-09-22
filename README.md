@@ -17,3 +17,5 @@ A mini web file server allow everyone up and down load files
 该服务器在进行验证前临时存储上传的文件的路径，强烈不建议将其与filePath放入不同分区或不同物理磁盘下
 ### external
 若设为字符串，则程序运行时会转而读取external下的json文件作为配置
+### cleanTime
+服务器文件定时清除文件的时间间隔，以分钟为单位（一天为1440分钟）
