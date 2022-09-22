@@ -1,6 +1,3 @@
 {
-    "port": 8080,
-    "filePath": "./file",
-    "tmp": "./tmp",
-    "external": false
+    "external": "/etc/simple-pan/config.json"
 }

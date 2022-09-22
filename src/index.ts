@@ -1,11 +1,6 @@
 import express from "express";
-import {
-  existsSync,
-  renameSync,
-  readdirSync,
-  mkdirSync,
-  readFileSync,
-} from "fs";
+import { existsSync, readdirSync, mkdirSync, readFileSync } from "fs";
+import mv from "mv";
 import path from "path";
 import CONFIG_j from "./config.json";
 import render from "./render";
@@ -64,7 +59,9 @@ app
     }
     response.sendFile(fp, {
       headers: {
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(path.basename(fp))}"`,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(
+          path.basename(fp)
+        )}"`,
       },
     });
   })
@@ -105,7 +102,7 @@ app
         }
       } else {
         for (let i in reTask) {
-          renameSync(reTask[i], i);
+          mv(reTask[i], i, (err) => (err ? console.log(err) : 0));
         }
         response.status(201).send("上传成功！" + jump);
       }
