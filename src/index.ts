@@ -62,16 +62,17 @@ app
       let reTask: { [index: string]: string } = {};
       (request.files as Express.Multer.File[]).forEach(
         (value: Express.Multer.File) => {
-          if (value.originalname.startsWith(".")) {
+          const oriName = Buffer.from(value.originalname, 'latin1').toString('utf-8')
+          if (oriName.startsWith(".")) {
             ill = Math.max(ill, 3);
           }
-          if (existsSync(path.join(PATH, value.originalname))) {
+          if (existsSync(path.join(PATH, oriName))) {
             ill = Math.max(ill, 2);
           }
-          if (path.join(PATH, value.originalname) in reTask) {
+          if (path.join(PATH, oriName) in reTask) {
             ill = Math.max(ill, 1);
           }
-          reTask[path.join(PATH, value.originalname)] = value.path;
+          reTask[path.join(PATH, oriName)] = value.path;
         }
       );
       if (ill) {
