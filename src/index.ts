@@ -1,11 +1,18 @@
 import express from "express";
-import { existsSync, renameSync, readdirSync, mkdirSync } from "fs";
+import { existsSync, renameSync, readdirSync, mkdirSync, readFileSync } from "fs";
 import path from "path";
-import CONFIG from "./config.json";
+import CONFIG_j from "./config.json";
 import render from "./render";
 import multer from "multer";
 import { jump } from "./html";
-
+let CONFIG
+if(typeof CONFIG_j["external"] == "string") {
+  CONFIG = JSON.parse(readFileSync(CONFIG_j["external"] as string, {
+    encoding:'utf-8'
+  }))
+} else {
+  CONFIG = CONFIG_j
+}
 const PORT = CONFIG.port;
 const PATH = CONFIG.filePath;
 if(!existsSync(PATH)){
