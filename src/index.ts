@@ -1,26 +1,38 @@
 import express from "express";
-import { existsSync, renameSync, readdirSync, mkdirSync, readFileSync } from "fs";
+import {
+  existsSync,
+  renameSync,
+  readdirSync,
+  mkdirSync,
+  readFileSync,
+} from "fs";
 import path from "path";
 import CONFIG_j from "./config.json";
 import render from "./render";
 import multer from "multer";
 import { jump } from "./html";
-let CONFIG
-if(typeof CONFIG_j["external"] == "string") {
-  CONFIG = JSON.parse(readFileSync(CONFIG_j["external"] as string, {
-    encoding:'utf-8'
-  }))
+let CONFIG;
+if (typeof CONFIG_j["external"] == "string") {
+  CONFIG = JSON.parse(
+    readFileSync(CONFIG_j["external"] as string, {
+      encoding: "utf-8",
+    })
+  );
 } else {
-  CONFIG = CONFIG_j
+  CONFIG = CONFIG_j;
 }
 const PORT = CONFIG.port;
-const PATH = CONFIG.filePath;
-if(!existsSync(PATH)){
-    mkdirSync(PATH)
+const PATH = path.isAbsolute(CONFIG.filePath)
+  ? CONFIG.filePath
+  : path.join(process.cwd(), CONFIG.filePath);
+if (!existsSync(PATH)) {
+  mkdirSync(PATH);
 }
-const TMP_PATH = CONFIG.tmp;
-if(!existsSync(TMP_PATH)){
-    mkdirSync(TMP_PATH)
+const TMP_PATH = path.isAbsolute(CONFIG.tmp)
+  ? CONFIG.tmp
+  : path.join(process.cwd(), CONFIG.tmp);
+if (!existsSync(TMP_PATH)) {
+  mkdirSync(TMP_PATH);
 }
 const app = express();
 app.use(
@@ -41,18 +53,18 @@ app
     let urll = request.url.split("/");
     let fp = "";
     if (urll.length != 3) {
-      response.status(403).send("您无权访问该目录！"+jump);
+      response.status(403).send("您无权访问该目录！" + jump);
       return;
     } else {
-      fp = path.join(PATH, urll[2]);
+      fp = path.join(PATH, decodeURIComponent(urll[2]));
     }
     if (!existsSync(fp) || path.basename(fp).startsWith(".")) {
-      response.status(404).send("您所请求的文件不存在！"+jump);
+      response.status(404).send("您所请求的文件不存在！" + jump);
       return;
     }
     response.sendFile(fp, {
       headers: {
-        "Content-Disposition": `attachment; filename="${path.basename(fp)}"`,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(path.basename(fp))}"`,
       },
     });
   })
@@ -62,7 +74,9 @@ app
       let reTask: { [index: string]: string } = {};
       (request.files as Express.Multer.File[]).forEach(
         (value: Express.Multer.File) => {
-          const oriName = Buffer.from(value.originalname, 'latin1').toString('utf-8')
+          const oriName = Buffer.from(value.originalname, "latin1").toString(
+            "utf-8"
+          );
           if (oriName.startsWith(".")) {
             ill = Math.max(ill, 3);
           }
@@ -79,17 +93,21 @@ app
         if (ill == 1) {
           response
             .status(422)
-            .send("上传文件内部有重名文件！请更换名字后重试！"+jump);
+            .send("上传文件内部有重名文件！请更换名字后重试！" + jump);
         } else if (ill == 2) {
-          response.status(409).send("与服务端已有文件重名！请更换名字后重试！"+jump);
+          response
+            .status(409)
+            .send("与服务端已有文件重名！请更换名字后重试！" + jump);
         } else {
-          response.status(403).send("您无权上传隐藏文件(以'.'开头的文件)！"+ jump);
+          response
+            .status(403)
+            .send("您无权上传隐藏文件(以'.'开头的文件)！" + jump);
         }
       } else {
         for (let i in reTask) {
           renameSync(reTask[i], i);
         }
-        response.status(201).send("上传成功！"+jump);
+        response.status(201).send("上传成功！" + jump);
       }
     } else {
       response.status(400).send("您的请求与格式不符！" + jump);
